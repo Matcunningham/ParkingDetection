@@ -1,12 +1,17 @@
 
 import cv2
 import numpy as np
+import threading
 
-
-video = "lotVidEnd.avi"
+video = "lotVid.avi"
 classFile = "yolov3.txt"
 weightsFile = "yolov3.weights"
 configFile = "yolov3.cfg"
+
+cap = cv2.VideoCapture(video)
+imgList = [cap.read()]
+lock = threading.Lock()
+
 
 def get_output_layers(net):
     
@@ -30,23 +35,40 @@ def draw_prediction(img, class_id, confidence, x, y, x_plus_w, y_plus_h):
     cv2.putText(img, "{0:.2f} %".format(confidence), (x-10,y-40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 
+class CaptureThread(threading.Thread):
+
+    def __init__(self):
+        super(CaptureThread, self).__init__()
+        self.start()
+
+    def run(self):
+        global cap
+        while cap.isOpened():
+            global imgList
+            global lock
+            lock.acquire()
+            success, imgList[0] = cap.read()
+            if not success:
+                cap.release()
+                raise SystemExit
+            lock.release()
 
 
 ############### MAIN ###############
 
-cap = cv2.VideoCapture(video)
+capThread = CaptureThread()
 
-while(cap.isOpened()):
+while cap.isOpened():
     currentPosition = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0  # Current position of the video file in seconds
     currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)  # Index of the frame to be decoded/captured next
 
-    success, image = cap.read()
+    lock.acquire()
+    image = imgList[0]
+    lock.release()
 
     Width = image.shape[1]
     Height = image.shape[0]
     scale = 0.00392
-
-    classes = None
 
     with open(classFile, 'r') as f:
         classes = [line.strip() for line in f.readlines()]
@@ -97,6 +119,7 @@ while(cap.isOpened()):
         draw_prediction(image, class_ids[i], confidences[i], round(x), round(y), round(x+w), round(y+h))
         print(str(class_ids[i]) + " " + str(confidences[i]) + " X: " + str(x) + " Y: " + str(y) + " W: " + str(w) + " H: " + str(h))
     cv2.imshow("object detection", image)
+    print()
 
     k = cv2.waitKey(1)
     if k == ord('q'):
@@ -105,7 +128,6 @@ while(cap.isOpened()):
         cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame + 500)  # jump 500 frames forward
     elif k == ord('u'):
         cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame - 500)  # jump 500 frames back
-    # if cv2.waitKey(33) == 27:
     elif k == 27:
         break
 
