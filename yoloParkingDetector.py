@@ -16,9 +16,9 @@ class yoloParkingDetector:
         self.ymlFile = ymlFile                                              # Parking Space Point yml file
         self.jsonFile = jsonFile                                            # File to write status updates into
 
-        self.URL = ""                                                       # Server URL and port
-        self.authenticationToken = ""                                       # Authentication Token file location, must be obtained from server. Used to prevent unauthorized posts
-        self.cameraNum = 10                                                 # Camera number used to identify where the info is coming from
+        self.URL = "http://54.186.186.248:3000/api/status"                                                       # Server URL and port
+        self.authenticationToken = "JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3RDYW1lcmE1IiwiaWF0IjoxNTUxMjMzNDE4fQ.JvRJRkLppw1psQbroOHyURxPiyVJguP3p-JeY2vwjsw"                                       # Authentication Token file location, must be obtained from server. Used to prevent unauthorized posts
+        self.cameraNum = 999                                                 # Camera number used to identify where the info is coming from
 
         self.cap = cv2.VideoCapture(self.video)                             # CV2 open video file
 
@@ -29,6 +29,8 @@ class yoloParkingDetector:
         self.net = None                                                     # Net object used in classification
         self.classes = None                                                 # Classes read from classFile
         self.COLORS = None                                                  # Colors used for our classes
+
+        self.visualize = False                                               # Create and display window and draw rectangle
 
 
 
@@ -113,13 +115,16 @@ class yoloParkingDetector:
                     # If rectangle contains a space point update status entry, draw the prediction, and break for loop
                     if(x < xPoint < x1 and y < yPoint < y1):
                         self.updateStatus(id, confidences[i])
-                        self.draw_prediction(frame, class_ids[i], confidences[i], round(x), round(y), round(x1),round(y1), spaces['id'])
+                        if(self.visualize):
+                            self.draw_prediction(frame, class_ids[i], confidences[i], round(x), round(y), round(x1),round(y1), spaces['id'])
                         break
 
             print(self.parkingStatus)
-            ### self.postStatus
+            #self.postStatus()
             self.parkingStatus = self.parkingStatusInit                             # Reset parking status for next frame
-            cv2.imshow("object detection", frame)                                   # Display the frame
+            if(self.visualize):
+                cv2.imshow("object detection", frame)  # Display the frame
+
 
             k = cv2.waitKey(2000)
             if k == ord('q'):
@@ -154,9 +159,10 @@ class yoloParkingDetector:
     def postStatus(self):
         print("Sending status data...")
         head = {'Authorization': self.authenticationToken}
-        body = {'Camera': self.cameraNum, 'status':str(self.parkingStatus)}
+        status = str(self.parkingStatus)
+        body = {'id': self.cameraNum, 'status':status}
         try:
-            msgResponse = post(self.URL, headers= head, data= body)                         # Post message
+            msgResponse = post(self.URL, headers=head, data=body)                         # Post message
         except:
             raise ValueError('Status could not be posted')                                  # If post message fails catch error and print message
 
