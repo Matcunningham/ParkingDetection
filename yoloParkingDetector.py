@@ -61,7 +61,8 @@ class yoloParkingDetector:
             scale = 0.00392
 
             # Prepare the frame to run through the deep neural network
-            blob = cv2.dnn.blobFromImage(frame, scale, (416, 416), (0, 0, 0), True, crop=False)             # Create 4-dimensional blob from current frame
+            # blob = cv2.dnn.blobFromImage(frame, scale, (416, 416), (0, 0, 0), True, crop=False)             # Create 4-dimensional blob from current frame
+            blob = cv2.dnn.blobFromImage(frame, scale, (320, 320), (0, 0, 0), True, crop=False)             # Create 4-dimensional blob from current frame
             self.net.setInput(blob)                                                                         # Set frame blob as the input for out network
 
             # Get output layers from network and then run interference through the network and gather predictions from output layers
