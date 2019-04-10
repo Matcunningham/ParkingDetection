@@ -121,7 +121,8 @@ class yoloParkingDetector:
                         break
 
             print(self.parkingStatus)
-            #self.postStatus()
+            # self.postStatus()
+            self.testStatus()
             self.parkingStatus = self.parkingStatusInit                             # Reset parking status for next frame
             if(self.visualize):
                 cv2.imshow("object detection", frame)  # Display the frame
@@ -161,9 +162,19 @@ class yoloParkingDetector:
         print("Sending status data...")
         head = {'Authorization': self.authenticationToken}
         status = str(self.parkingStatus)
-        body = {'id': self.cameraNum, 'status':status}
+        body = {'parking_ID': "491", 'confidence':status}
         try:
             msgResponse = post(self.URL, headers=head, data=body)                         # Post message
+        except:
+            raise ValueError('Status could not be posted')                                  # If post message fails catch error and print message    ### Posts status updates to our server using HTTP POST ###
+
+    def testStatus(self):
+        print("Sending status data...")
+        # head = {'Authorization': self.authenticationToken}
+        status = str(self.parkingStatus)
+        body = {'parking_ID': "491", 'confidence':status}
+        try:
+            msgResponse = post(self.URL, data=body)                         # Post message
         except:
             raise ValueError('Status could not be posted')                                  # If post message fails catch error and print message
 
