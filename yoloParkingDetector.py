@@ -3,7 +3,7 @@ import numpy as np
 import yaml
 from parkingSpacePoint import parkingSpacePoint
 from os.path import isfile
-from requests import post
+from requests import post, put
 
 class yoloParkingDetector:
     def __init__(self, video, classFile, weightsFile, configFile, ymlFile, jsonFile):
@@ -16,9 +16,10 @@ class yoloParkingDetector:
         self.ymlFile = ymlFile                                              # Parking Space Point yml file
         self.jsonFile = jsonFile                                            # File to write status updates into
 
-        self.URL = "http://54.186.186.248:3000/api/status"                                                       # Server URL and port
+        self.URL = "http://54.186.186.248:3000/api/camerastatus"                                                       # Server URL and port
         self.authenticationToken = "JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3RDYW1lcmE1IiwiaWF0IjoxNTUxMjMzNDE4fQ.JvRJRkLppw1psQbroOHyURxPiyVJguP3p-JeY2vwjsw"                                       # Authentication Token file location, must be obtained from server. Used to prevent unauthorized posts
         self.cameraNum = 999                                                 # Camera number used to identify where the info is coming from
+        self.parkinglot_ID = 1
 
         self.cap = cv2.VideoCapture(self.video)                             # CV2 open video file
 
@@ -160,23 +161,24 @@ class yoloParkingDetector:
     ### Posts status updates to our server using HTTP POST ###
     def postStatus(self):
         print("Sending status data...")
-        head = {'Authorization': self.authenticationToken}
-        status = str(self.parkingStatus)
-        body = {'parking_ID': "491", 'confidence':status}
-        try:
-            msgResponse = post(self.URL, headers=head, data=body)                         # Post message
-        except:
-            raise ValueError('Status could not be posted')                                  # If post message fails catch error and print message    ### Posts status updates to our server using HTTP POST ###
-
-    def testStatus(self):
-        print("Sending status data...")
         # head = {'Authorization': self.authenticationToken}
         status = str(self.parkingStatus)
-        body = {'parking_ID': "491", 'confidence':status}
+        body = {'parkinglot_ID': self.parkinglot_ID, 'camera_ID': self.cameraNum, 'status':status}
         try:
             msgResponse = post(self.URL, data=body)                         # Post message
         except:
             raise ValueError('Status could not be posted')                                  # If post message fails catch error and print message
+
+    def putStatus(self):
+        print("Sending status data...")
+        # head = {'Authorization': self.authenticationToken}
+        status = str(self.parkingStatus)
+        body = {'parkinglot_ID': self.parkinglot_ID, 'camera_ID': self.cameraNum, 'status': status}
+        putURL = self.URL+"/"+self.parkinglot_ID
+        try:
+            msgResponse = put(putURL, data=body)  # Post message
+        except:
+            raise ValueError('Status could not be posted')  # If post message fails catch error and print message
 
     def updateStatus(self, id, confidence):
         for entry in self.parkingStatus:
