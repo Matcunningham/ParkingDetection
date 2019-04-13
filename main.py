@@ -8,6 +8,6 @@ yml = "parking.yml"
 json = "parkingData.json"
 
 
-
+# Pass in zero as first argument for live feed
 myDetector = yoloParkingDetector(vid, classFile, weightsFile, configFile, yml, json)
 myDetector.run()

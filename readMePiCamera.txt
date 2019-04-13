@@ -1,0 +1,1 @@
+command to enable cv2 reading from camera: sudo modprobe bcm2835-v4l2
