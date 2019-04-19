@@ -3,9 +3,8 @@ import numpy as np
 import yaml
 from parkingSpacePoint import parkingSpacePoint
 from os.path import isfile
-from requests import post, put
+from requests import post, put, get
 import threading
-import time
 
 cap = cv2.VideoCapture()
 imgList = []
@@ -47,7 +46,7 @@ class yoloParkingDetector:
         self.ymlFile = ymlFile                                              # Parking Space Point yml file
         self.jsonFile = jsonFile                                            # File to write status updates into
 
-        self.URL = "http://54.186.186.248:3000/api/camerastatus"                                                       # Server URL and port
+        self.URL = "http://54.186.186.248:3000/api/status"                                                       # Server URL and port
         self.authenticationToken = "JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3RDYW1lcmE1IiwiaWF0IjoxNTUxMjMzNDE4fQ.JvRJRkLppw1psQbroOHyURxPiyVJguP3p-JeY2vwjsw"                                       # Authentication Token file location, must be obtained from server. Used to prevent unauthorized posts
         self.cameraNum = 999                                                 # Camera number used to identify where the info is coming from
         self.parkinglot_ID = 1
@@ -62,7 +61,8 @@ class yoloParkingDetector:
         self.classes = None                                                 # Classes read from classFile
         self.COLORS = None                                                  # Colors used for our classes
 
-        self.visualize = True                                              # Create and display window and draw rectangle
+        self.isGetNecessary = True                                          # True for 1st iteration in run(), checks if we need to POST
+        self.visualize = False                                              # Create and display window and draw rectangle
 
 
     def run(self):
@@ -70,7 +70,7 @@ class yoloParkingDetector:
             global imgList
             global cap
             imgList = [cap.read()]
-            capThread = CaptureThread()
+            CaptureThread()
             
             self.openYML()  # Open ymlFile and save parking space boundary information
 
@@ -162,21 +162,26 @@ class yoloParkingDetector:
                             break
 
                 print(self.parkingStatus)
-                # self.putStatus()
-                # self.postStatus()
-                # self.testStatus()
+
+                if self.isGetNecessary:
+                    self.isGetNecessary = False
+                    getReq = get(self.URL + "/" + str(self.parkinglot_ID))
+                    if getReq.text == '':
+                        self.postStatus()
+                self.putStatus()
+
                 self.parkingStatus = self.parkingStatusInit                             # Reset parking status for next frame
                 if(self.visualize):
                     cv2.imshow("object detection", frame)  # Display the frame
 
 
-                k = cv2.waitKey(2000)
+                k = cv2.waitKey(1) # Time set low to speed up raspi, also get error on raspi using CAP_PROP... below
                 if k == ord('q'):
                     break
-                elif k == ord('j'):
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame + 500)  # jump 500 frames forward
-                elif k == ord('u'):
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame - 500)  # jump 500 frames back
+                # elif k == ord('j'):
+                #     cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame + 500)  # jump 500 frames forward
+                # elif k == ord('u'):
+                #     cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame - 500)  # jump 500 frames back
                 # if cv2.waitKey(33) == 27:
                 elif k == 27:
                     break
@@ -205,21 +210,22 @@ class yoloParkingDetector:
     def postStatus(self):
         print("Sending status data...")
         # head = {'Authorization': self.authenticationToken}
-        status = str(self.parkingStatus)
-        body = {'parkinglot_ID': self.parkinglot_ID, 'camera_ID': self.cameraNum, 'status':status}
+        status = self.parkingStatus
+        body = {"parkinglot_ID": self.parkinglot_ID, "camera_ID": self.cameraNum, "status":status}
+        print(body)
         try:
-            msgResponse = post(self.URL, data=body)                         # Post message
+            msgResponse = post(self.URL, json=body)                         # Post message
         except:
             raise ValueError('Status could not be posted')                                  # If post message fails catch error and print message
 
     def putStatus(self):
         print("Sending status data...")
         # head = {'Authorization': self.authenticationToken}
-        status = str(self.parkingStatus)
+        status = self.parkingStatus
         body = {'parkinglot_ID': self.parkinglot_ID, 'camera_ID': self.cameraNum, 'status': status}
         putURL = self.URL+"/"+ str(self.parkinglot_ID)
         try:
-            msgResponse = put(putURL, data=body)  # Post message
+            msgResponse = put(putURL, json=body)  # Post message
         except:
             raise ValueError('Status could not be posted')  # If post message fails catch error and print message
 
@@ -230,12 +236,12 @@ class yoloParkingDetector:
 
     ### Opens ymlFile and loads data, if ymlFile does not exist it prompts the user to define parking space points for detection ###
     def openYML(self):
-        global cap
         # Read YAML data (parking space polygons)
         if isfile(self.ymlFile):                                # If yml file exists open it and load parking space data
             with open(self.ymlFile, 'r') as stream:
                 self.parkingSpaceData = yaml.load(stream)
         else:                                                   # Else create yml file then load it
+            global cap
             success, image = cap.read()                    # Capture frame to mark parking spaces
             if success:                                         # If frame can be captured
                 ymlImg = image
