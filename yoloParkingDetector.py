@@ -46,10 +46,11 @@ class yoloParkingDetector:
         self.ymlFile = ymlFile                                              # Parking Space Point yml file
         self.jsonFile = jsonFile                                            # File to write status updates into
 
-        self.URL = "http://54.186.186.248:3000/api/status"                                                       # Server URL and port
+        self.URL = "http://54.186.186.248:3000/api/status"                                                    # Server URL and port
+        self.camURL = "http://54.186.186.248:3000/api/camerastatus" 
         self.authenticationToken = "JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3RDYW1lcmE1IiwiaWF0IjoxNTUxMjMzNDE4fQ.JvRJRkLppw1psQbroOHyURxPiyVJguP3p-JeY2vwjsw"                                       # Authentication Token file location, must be obtained from server. Used to prevent unauthorized posts
         self.cameraNum = 999                                                 # Camera number used to identify where the info is coming from
-        self.parkinglot_ID = 1
+        self.parkinglot_ID = 667
 
         cap = cv2.VideoCapture(self.video)                             # CV2 open video file
 
@@ -62,7 +63,7 @@ class yoloParkingDetector:
         self.COLORS = None                                                  # Colors used for our classes
 
         self.isGetNecessary = True                                          # True for 1st iteration in run(), checks if we need to POST
-        self.visualize = False                                              # Create and display window and draw rectangle
+        self.visualize = True                                               # Create and display window and draw rectangle
 
 
     def run(self):
@@ -135,6 +136,11 @@ class yoloParkingDetector:
                 # Apply non-max suppression  (removes boxes with high overlapping)
                 indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
 
+                # Reset all spaces to empty before checking if vehicle in space
+                for spaces in self.parkingSpaceData:
+                    id = spaces['id']
+                    self.updateStatus(id, 0)
+                    
                 # Go through boxes after non-max suppression and draw bounding boxes for vehicles detected inside of parking spaces
                 for i in indices:
                     i = i[0]
@@ -215,6 +221,7 @@ class yoloParkingDetector:
         print(body)
         try:
             msgResponse = post(self.URL, json=body)                         # Post message
+            msgResponse2 = post(self.camURL, json=body)
         except:
             raise ValueError('Status could not be posted')                                  # If post message fails catch error and print message
 
@@ -222,7 +229,7 @@ class yoloParkingDetector:
         print("Sending status data...")
         # head = {'Authorization': self.authenticationToken}
         status = self.parkingStatus
-        body = {'parkinglot_ID': self.parkinglot_ID, 'camera_ID': self.cameraNum, 'status': status}
+        body = {"parkinglot_ID": self.parkinglot_ID, "camera_ID": self.cameraNum, "status":status}
         putURL = self.URL+"/"+ str(self.parkinglot_ID)
         try:
             msgResponse = put(putURL, json=body)  # Post message
