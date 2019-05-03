@@ -64,7 +64,10 @@ class yoloParkingDetector:
 
         self.isGetNecessary = True                                          # True for 1st iteration in run(), checks if we need to POST
         self.visualize = True                                               # Create and display window and draw rectangle
+
         self.threadToggle = False
+        self.usingJetson = True                                             # Variable to control computation target and backend when using Jetson Nano
+
 
 
     def run(self):
@@ -114,6 +117,11 @@ class yoloParkingDetector:
                 blob = cv2.dnn.blobFromImage(frame, scale, (320, 320), (0, 0, 0), True, crop=False)             # Create 4-dimensional blob from current frame
                 self.net.setInput(blob)                                                                         # Set frame blob as the input for out network
 
+                # For use in Jetson Nano: perform computations using specific computation backend and target
+                if self.usingJetson:
+                    net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+                    net.setPreferableTarget(cv2.dnn.DNN_TARGET_OPENCL)
+                
                 # Get output layers from network and then run interference through the network and gather predictions from output layers
                 outs = self.net.forward(self.get_output_layers())
 
