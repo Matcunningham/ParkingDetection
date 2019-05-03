@@ -65,7 +65,7 @@ class yoloParkingDetector:
         self.isGetNecessary = True                                          # True for 1st iteration in run(), checks if we need to POST
         self.visualize = True                                               # Create and display window and draw rectangle
 
-        self.threadToggle = False
+        self.threadToggle = False                                           # Toggle for threading, Set to FALSE for a video.
         self.usingJetson = True                                             # Variable to control computation target and backend when using Jetson Nano
 
 
