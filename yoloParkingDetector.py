@@ -50,7 +50,7 @@ class yoloParkingDetector:
         self.camURL = "http://54.186.186.248:3000/api/camerastatus" 
         self.authenticationToken = "JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3RDYW1lcmE1IiwiaWF0IjoxNTUxMjMzNDE4fQ.JvRJRkLppw1psQbroOHyURxPiyVJguP3p-JeY2vwjsw"                                       # Authentication Token file location, must be obtained from server. Used to prevent unauthorized posts
         self.cameraNum = 999                                                 # Camera number used to identify where the info is coming from
-        self.parkinglot_ID = 667
+        self.parkinglot_ID = "G13"
 
         cap = cv2.VideoCapture(self.video)                             # CV2 open video file
 
@@ -64,14 +64,16 @@ class yoloParkingDetector:
 
         self.isGetNecessary = True                                          # True for 1st iteration in run(), checks if we need to POST
         self.visualize = True                                               # Create and display window and draw rectangle
+        self.threadToggle = False
 
 
     def run(self):
         try:
             global imgList
             global cap
-            imgList = [cap.read()]
-            CaptureThread()
+            if(self.threadToggle):
+                imgList = [cap.read()]
+                CaptureThread()
             
             self.openYML()  # Open ymlFile and save parking space boundary information
 
@@ -86,11 +88,16 @@ class yoloParkingDetector:
             while (cap.isOpened()):
                 #currentPosition = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0  # Current position of the video file in seconds
                 #currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)  # Index of the frame to be decoded/captured next
-                
-                global lock
-                lock.acquire()
-                success, initialFrame = imgList[0] #self.cap.read()  # Capture frame
-                lock.release()
+
+                success = False
+                if(self.threadToggle):
+                    global lock
+                    lock.acquire()
+                    success, initialFrame = imgList[0] #self.cap.read()  # Capture frame
+                    lock.release()
+                else:
+                    success, initialFrame = cap.read()
+
                 if success:
                     frame = initialFrame
                 else:
