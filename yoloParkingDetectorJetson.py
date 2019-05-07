@@ -6,10 +6,6 @@ from os.path import isfile
 from requests import post, put, get
 import threading
 
-cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
-imgList = []
-lock = threading.Lock()
-
 # gstreamer_pipeline returns a GStreamer pipeline for capturing from the CSI camera
 # Defaults to 1280x720 @ 30fps 
 # Flip the image by setting the flip_method (most common values: 0 and 2)
@@ -24,6 +20,10 @@ def gstreamer_pipeline (capture_width=3280, capture_height=2464, display_width=8
     'video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! '
     'videoconvert ! '
     'video/x-raw, format=(string)BGR ! appsink'  % (capture_width,capture_height,framerate,flip_method,display_width,display_height))
+
+cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+imgList = []
+lock = threading.Lock()
 
 # Used to get the latest frame, mainly for live feed
 class CaptureThread(threading.Thread):
