@@ -66,9 +66,6 @@ class yoloParkingDetector:
         self.visualize = True                                               # Create and display window and draw rectangle
 
         self.threadToggle = False                                           # Toggle for threading, Set to FALSE for a video.
-        self.usingJetson = True                                             # Variable to control computation target and backend when using Jetson Nano
-
-
 
     def run(self):
         try:
@@ -115,12 +112,7 @@ class yoloParkingDetector:
                 # Prepare the frame to run through the deep neural network
                 # blob = cv2.dnn.blobFromImage(frame, scale, (416, 416), (0, 0, 0), True, crop=False)             # Create 4-dimensional blob from current frame
                 blob = cv2.dnn.blobFromImage(frame, scale, (320, 320), (0, 0, 0), True, crop=False)             # Create 4-dimensional blob from current frame
-                self.net.setInput(blob)                                                                         # Set frame blob as the input for out network
-
-                # For use in Jetson Nano: perform computations using specific computation backend and target
-                if self.usingJetson:
-                    net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-                    net.setPreferableTarget(cv2.dnn.DNN_TARGET_OPENCL)
+                self.net.setInput(blob)                                                                         # Set frame blob as the input for out networ
                 
                 # Get output layers from network and then run interference through the network and gather predictions from output layers
                 outs = self.net.forward(self.get_output_layers())
