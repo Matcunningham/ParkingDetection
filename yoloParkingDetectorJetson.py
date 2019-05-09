@@ -61,7 +61,7 @@ class yoloParkingDetector:
         with open(self.classFile, 'r') as f:                                              # Get classes from class file
             self.classes = [line.strip() for line in f.readlines()]
         self.COLORS = np.random.uniform(0, 255, size=(len(self.classes), 3))                      # Set colors for each class
-        self.net = cv2.dnn.readNet(self.weightsFile, self.configFile)                           # Construct net object using our pre-trained classifier model and config files
+        self.net = cv2.dnn.readNetFromDarknet("/home/computer/ParkingDetection/yolov3.weights", "/home/computer/ParkingDetectionyolov3.cfg")                           # Construct net object using our pre-trained classifier model and config files
 
         # Parking detection begins
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, 1700)                                     # Jump to frame number specified
