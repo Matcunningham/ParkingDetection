@@ -35,7 +35,7 @@ class CaptureThread(threading.Thread):
 
 class yoloParkingDetector:
     
-    def __init__(self, video, classFile, weightsFile, configFile, ymlFile, jsonFile):
+    def __init__(self, video, classFile, weightsFile, configFile, ymlFile, lotID, cameraNum):
         global cap
         self.video = video                                                  # Video file location
 
@@ -44,13 +44,13 @@ class yoloParkingDetector:
         self.configFile = configFile
 
         self.ymlFile = ymlFile                                              # Parking Space Point yml file
-        self.jsonFile = jsonFile                                            # File to write status updates into
+
 
         self.URL = "http://54.186.186.248:3000/api/status"                                                    # Server URL and port
         self.camURL = "http://54.186.186.248:3000/api/camerastatus" 
         self.authenticationToken = "JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3RDYW1lcmE1IiwiaWF0IjoxNTUxMjMzNDE4fQ.JvRJRkLppw1psQbroOHyURxPiyVJguP3p-JeY2vwjsw"                                       # Authentication Token file location, must be obtained from server. Used to prevent unauthorized posts
-        self.cameraNum = 999                                                 # Camera number used to identify where the info is coming from
-        self.parkinglot_ID = "G13"
+        self.cameraNum = cameraNum                                                 # Camera number used to identify where the info is coming from
+        self.parkinglot_ID = lotID
 
         cap = cv2.VideoCapture(self.video)                             # CV2 open video file
 
@@ -229,6 +229,7 @@ class yoloParkingDetector:
         try:
             msgResponse = post(self.URL, json=body)                         # Post message
             msgResponse2 = post(self.camURL, json=body)
+            return msgResponse, msgResponse2
         except:
             raise ValueError('Status could not be posted')                                  # If post message fails catch error and print message
 
@@ -240,6 +241,7 @@ class yoloParkingDetector:
         putURL = self.URL+"/"+ str(self.parkinglot_ID)
         try:
             msgResponse = put(putURL, json=body)  # Post message
+            return msgResponse
         except:
             raise ValueError('Status could not be posted')  # If post message fails catch error and print message
 
